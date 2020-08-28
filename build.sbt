@@ -63,6 +63,8 @@ lazy val chiselLib = "edu.berkeley.cs" %% "chisel3" % chiselVersion
 //   keeping scalaVersion in sync with chisel3 to the minor version
 lazy val chiselPluginLib = "edu.berkeley.cs" % "chisel3-plugin" % chiselVersion cross CrossVersion.full
 
+lazy val firrtlRef = ProjectRef(workspaceDirectory / "firrtl", "firrtl")
+
 lazy val `api-config-chipsalliance` = (project in file("api-config-chipsalliance/build-rules/sbt"))
   .settings(commonSettings)
   .settings(publishArtifact := false)
@@ -75,23 +77,12 @@ lazy val `rocket-macros` = (project in file("macros")).settings(commonSettings)
   .settings(publishArtifact := false)
 lazy val rocketchip = (project in file("."))
   .sourceDependency(chiselRef, chiselLib)
+  .dependsOn(firrtlRef % "test->test")
   .settings(addCompilerPlugin(chiselPluginLib))
   .settings(commonSettings, chipSettings)
-  .dependsOn(`api-config-chipsalliance` % "compile-internal;test-internal")
-  .dependsOn(hardfloat % "compile-internal;test-internal")
-  .dependsOn(`rocket-macros` % "compile-internal;test-internal")
-  .settings(
-      aggregate := false,
-      // Include macro classes, resources, and sources in main jar.
-      mappings in (Compile, packageBin) ++= (mappings in (`api-config-chipsalliance`, Compile, packageBin)).value,
-      mappings in (Compile, packageSrc) ++= (mappings in (`api-config-chipsalliance`, Compile, packageSrc)).value,
-      mappings in (Compile, packageBin) ++= (mappings in (hardfloat, Compile, packageBin)).value,
-      mappings in (Compile, packageSrc) ++= (mappings in (hardfloat, Compile, packageSrc)).value,
-      mappings in (Compile, packageBin) ++= (mappings in (`rocket-macros`, Compile, packageBin)).value,
-      mappings in (Compile, packageSrc) ++= (mappings in (`rocket-macros`, Compile, packageSrc)).value,
-      exportJars := true,
-      Test / unmanagedBase := baseDirectory.value / "test_lib"
-  )
+  .dependsOn(`api-config-chipsalliance`)
+  .dependsOn(hardfloat)
+  .dependsOn(`rocket-macros`)
   .settings( // Assembly settings
     assembly / test := {},
     assembly / assemblyJarName := "rocketchip.jar",
